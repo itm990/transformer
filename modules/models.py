@@ -201,7 +201,7 @@ class MultiHeadAttention(nn.Module):
         score = torch.bmm(query, key)
         score = torch.div(score, (hidden_size/parallel_size)**0.5)
         masks = mask.repeat(parallel_size, 1, 1)
-        score.masked_fill_(masks, -float('inf'))
+        score.masked_fill_(masks, -float("inf"))
         
         weight = self.softmax(score)
         weight = self.dropout(weight)

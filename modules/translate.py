@@ -102,7 +102,7 @@ def translate(PAD, BOS, EOS, max_len, dictionary, pos_enc,
             for sentence in generated_words:
                 sentence_list.append(sentence)
         
-            pbar.set_description('[translation]')
+            pbar.set_description("[translation]")
         
     return sentence_list
 

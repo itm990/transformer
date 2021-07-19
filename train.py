@@ -72,13 +72,6 @@ def train(PAD, BOS, EOS, max_len, dictionary, pos_enc, args,
             enc_in, dec_in, dec_out = map(lambda x: x.to(device), batch)
             
             batch_size = enc_in.size(0)
-            """
-            eos = torch.full((batch_size, 1), EOS,
-                             dtype=torch.int64, device=device)
-            pad = torch.tensor(PAD, device=device)
-            in_tgt = torch.where(out_tgt==EOS, pad, out_tgt)
-            in_tgt = torch.cat((eos, in_tgt[:, :-1]), dim=1)
-            """
             src_sent_len, tgt_sent_len = enc_in.size(1), dec_in.size(1)
             src_pad_mask = enc_in.eq(PAD).unsqueeze(1) 
             tgt_pad_mask = dec_in.eq(PAD).unsqueeze(1)
