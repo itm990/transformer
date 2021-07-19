@@ -4,7 +4,9 @@ import torch.utils.data
 
 class PairedDataset(torch.utils.data.Dataset):
 
-    def __init__(self, src_data, tgt_data):
+    def __init__(self, bos_idx, eos_idx, src_data, tgt_data):
+        self.bos_idx = bos_idx
+        self.eos_idx = eos_idx
         self.src_data = src_data
         self.tgt_data = tgt_data
     
@@ -12,7 +14,10 @@ class PairedDataset(torch.utils.data.Dataset):
         return len(self.src_data)
 
     def __getitem__(self, idx):
-        return self.src_data[idx], self.tgt_data[idx]
+        encoder_input  = self.src_data[idx]
+        decoder_input  = [self.bos_idx] + self.tgt_data[idx]
+        decoder_output = self.tgt_data[idx] + [self.eos_idx]
+        return encoder_input, decoder_input, decoder_output
 
 
 class SingleDataset(torch.utils.data.Dataset):
@@ -29,10 +34,11 @@ class SingleDataset(torch.utils.data.Dataset):
 
 def paired_collate_fn(insts):
 
-    src, tgt = list(zip(*insts))
-    src = collate_fn(src)
-    tgt = collate_fn(tgt)
-    return (src, tgt)
+    enc_in, dec_in, dec_out = list(zip(*insts))
+    enc_in  = collate_fn(enc_in)
+    dec_in  = collate_fn(dec_in)
+    dec_out = collate_fn(dec_out)
+    return (enc_in, dec_in, dec_out)
 
 
 def collate_fn(insts):

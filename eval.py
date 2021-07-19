@@ -63,7 +63,7 @@ def main():
     pos_enc = positional_encoding(src_max_len+50, config.hidden_size)
     
     transformer = models.Transformer(
-        PAD, PAD,
+        PAD,
         config.hidden_size, config.ffn_hidden_size,
         src_dict_size, tgt_dict_size,
         config.parallel_size, config.sub_layer_num,
@@ -73,7 +73,7 @@ def main():
     
     transformer.load_state_dict(torch.load(args.model_name))
     
-    sentence_list = translate(EOS, PAD, PAD,
+    sentence_list = translate(PAD, BOS, EOS,
                               src_max_len, idx2tgt, pos_enc,
                               eval_loader, transformer, device)
     sentences = ""

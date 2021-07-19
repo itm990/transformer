@@ -48,7 +48,7 @@ def convert_word_to_idx(word_list, word2index):
     return [ [ word2index[word] if word in word2index else word2index["[UNK]"] for word in words ] for words in word_list ]
 
 
-def train(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc, args,
+def train(PAD, BOS, EOS, max_len, dictionary, pos_enc, args,
           train_loader, valid_loader, valid_word_data, transformer,
           criterion, optimizer, device, model_name):
 
@@ -69,19 +69,19 @@ def train(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc, args,
             
             optimizer.zero_grad()
 
-            source, out_tgt = map(lambda x: x.to(device), batch)
+            enc_in, dec_in, dec_out = map(lambda x: x.to(device), batch)
             
-            batch_size = source.size(0)
-
-            eos = torch.full((batch_size, 1), tgt_EOS,
+            batch_size = enc_in.size(0)
+            """
+            eos = torch.full((batch_size, 1), EOS,
                              dtype=torch.int64, device=device)
-            pad = torch.tensor(tgt_PAD, device=device)
-            in_tgt = torch.where(out_tgt==tgt_EOS, pad, out_tgt)
+            pad = torch.tensor(PAD, device=device)
+            in_tgt = torch.where(out_tgt==EOS, pad, out_tgt)
             in_tgt = torch.cat((eos, in_tgt[:, :-1]), dim=1)
-            
-            src_sent_len, tgt_sent_len = source.size(1), in_tgt.size(1)
-            src_pad_mask = source.eq(src_PAD).unsqueeze(1) 
-            tgt_pad_mask = in_tgt.eq(tgt_PAD).unsqueeze(1)
+            """
+            src_sent_len, tgt_sent_len = enc_in.size(1), dec_in.size(1)
+            src_pad_mask = enc_in.eq(PAD).unsqueeze(1) 
+            tgt_pad_mask = dec_in.eq(PAD).unsqueeze(1)
 
             enc_self_attn_mask = src_pad_mask.expand(-1, src_sent_len, -1)
             dec_self_attn_mask = tgt_pad_mask.expand(-1, tgt_sent_len, -1)
@@ -97,14 +97,14 @@ def train(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc, args,
             dec_pos_enc = pos_enc[:tgt_sent_len, :].unsqueeze(0)
             dec_pos_enc = dec_pos_enc.expand(batch_size, -1, -1).to(device)
             
-            output = transformer(source, in_tgt, enc_pos_enc, dec_pos_enc,
+            output = transformer(enc_in, dec_in, enc_pos_enc, dec_pos_enc,
                                  enc_self_attn_mask, dec_self_attn_mask,
                                  dec_srctgt_mask)
             
             output = output.view(-1, output.size(-1))
-            out_tgt = out_tgt.view(-1)
+            dec_out = dec_out.view(-1)
             
-            loss = criterion(output, out_tgt)
+            loss = criterion(output, dec_out)
             
             total_loss += loss
             loss.backward()
@@ -123,7 +123,7 @@ def train(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc, args,
                                  % (epoch+1, total_loss/(i+1)))
 
         if epoch >= 0:
-            sentences = translate(tgt_EOS, src_PAD, tgt_PAD,
+            sentences = translate(PAD, BOS, EOS,
                                   max_len, dictionary, pos_enc,
                                   valid_loader, transformer, device)
             bleu_score = nltk.translate.bleu_score.corpus_bleu(valid_word_data, sentences) * 100
@@ -228,7 +228,9 @@ def main():
     tgt_train_idx_list = convert_word_to_idx(word_list=tgt_train_word_list, word2index=tgt2idx)
     src_valid_idx_list = convert_word_to_idx(word_list=src_valid_word_list, word2index=src2idx)
 
-    train_data = dataset.PairedDataset(src_data=src_train_idx_list,
+    train_data = dataset.PairedDataset(bos_idx=BOS,
+                                       eos_idx=EOS,
+                                       src_data=src_train_idx_list,
                                        tgt_data=tgt_train_idx_list)
     train_loader = DataLoader(train_data,
                               batch_size=args.batch_size,
@@ -247,7 +249,7 @@ def main():
     pos_enc = positional_encoding(args.max_length+100, args.hidden_size)
 
     transformer = models.Transformer(
-        PAD, PAD,
+        PAD,
         args.hidden_size, args.ffn_hidden_size,
         src_dict_size, tgt_dict_size,
         args.parallel_size, args.sub_layer_num,
@@ -264,7 +266,7 @@ def main():
                           ignore_index=PAD)
 
 
-    train(EOS, PAD, PAD, args.max_length, idx2tgt, pos_enc, args,
+    train(PAD, BOS, EOS, args.max_length, idx2tgt, pos_enc, args,
           train_loader, valid_loader, valid_word_data, transformer,
           criterion, optimizer, device, model_name)
 

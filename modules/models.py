@@ -6,17 +6,17 @@ import torch.nn.functional as F
 class Transformer(nn.Module):
 
     def __init__(self,
-                 src_pad_index, tgt_pad_index,
+                 pad_index,
                  hidden_size, ffn_hidden_size,
                  src_dict_size, tgt_dict_size,
                  parallel_size, sub_layer_num,
                  dropout, init):
         super(Transformer, self).__init__()
 
-        self.encoder = Encoder(src_pad_index, hidden_size, ffn_hidden_size,
+        self.encoder = Encoder(pad_index, hidden_size, ffn_hidden_size,
                                src_dict_size, parallel_size, sub_layer_num,
                                dropout, init)
-        self.decoder = Decoder(tgt_pad_index, hidden_size, ffn_hidden_size,
+        self.decoder = Decoder(pad_index, hidden_size, ffn_hidden_size,
                                tgt_dict_size, parallel_size, sub_layer_num,
                                dropout, init)
         
@@ -34,13 +34,13 @@ class Transformer(nn.Module):
 class Encoder(nn.Module):
 
     def __init__(self,
-                 src_pad_index, hidden_size, ffn_hidden_size, dict_size,
+                 pad_index, hidden_size, ffn_hidden_size, dict_size,
                  parallel_size, sub_layer_num, dropout, init):
         super(Encoder, self).__init__()
         
         self.hidden_size = hidden_size
         self.embedding = nn.Embedding(dict_size, hidden_size,
-                                      padding_idx=src_pad_index)
+                                      padding_idx=pad_index)
         self.dropout = nn.Dropout(p=dropout)
         self.encoder_sub_layers = nn.ModuleList(
             [EncoderLayer(hidden_size, ffn_hidden_size, parallel_size, dropout)
@@ -48,7 +48,7 @@ class Encoder(nn.Module):
         )
         if init:
             nn.init.normal_(self.embedding.weight, mean=0, std=hidden_size ** -0.5)
-            nn.init.constant_(self.embedding.weight[src_pad_index], 0)
+            nn.init.constant_(self.embedding.weight[pad_index], 0)
         
     def forward(self, input, pos_enc, self_attn_mask):
         
@@ -69,13 +69,13 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
 
     def __init__(self,
-                 tgt_pad_index, hidden_size, ffn_hidden_size, dict_size,
+                 pad_index, hidden_size, ffn_hidden_size, dict_size,
                  parallel_size, sub_layer_num, dropout, init):
         super(Decoder, self).__init__()
         
         self.hidden_size = hidden_size
         self.embedding = nn.Embedding(dict_size, hidden_size,
-                                      padding_idx=tgt_pad_index)
+                                      padding_idx=pad_index)
         self.dropout = nn.Dropout(p=dropout)
         self.decoder_sub_layers = nn.ModuleList(
             [DecoderLayer(hidden_size, ffn_hidden_size, parallel_size, dropout)
@@ -85,7 +85,7 @@ class Decoder(nn.Module):
         self.logsoftmax = nn.LogSoftmax(dim=2)
         if init:
             nn.init.normal_(self.embedding.weight, mean=0, std=hidden_size ** -0.5)
-            nn.init.constant_(self.embedding.weight[tgt_pad_index], 0)
+            nn.init.constant_(self.embedding.weight[pad_index], 0)
             nn.init.xavier_uniform_(self.out.weight)
             nn.init.constant_(self.out.bias, 0)
               

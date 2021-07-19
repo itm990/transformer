@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 
-def translate(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc,
+def translate(PAD, BOS, EOS, max_len, dictionary, pos_enc,
               data_loader, transformer, device):
 
     transformer.eval()
@@ -18,12 +18,13 @@ def translate(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc,
             
             batch_size = source.size(0)
             
-            eos = torch.full((batch_size, 1), tgt_EOS,
+            in_tgt = torch.full((batch_size, 1), BOS,
                              dtype=torch.int64, device=device)
-            in_tgt = eos
+            eos = torch.full((batch_size, 1), EOS,
+                             dtype=torch.int64, device=device)
             
             src_sent_len = source.size(1)
-            src_pad_mask = source.eq(src_PAD).unsqueeze(1)
+            src_pad_mask = source.eq(PAD).unsqueeze(1)
             
             enc_self_attn_mask = src_pad_mask.expand(-1, src_sent_len, -1)
             
@@ -41,7 +42,7 @@ def translate(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc,
                 
                 sent_num = in_tgt.size(0)
                 tgt_sent_len = in_tgt.size(1)
-                tgt_pad_mask = in_tgt.eq(tgt_PAD).unsqueeze(1)
+                tgt_pad_mask = in_tgt.eq(PAD).unsqueeze(1)
                 
                 dec_self_attn_mask = tgt_pad_mask.expand(-1, tgt_sent_len, -1)
                 infer_mask = torch.ones((tgt_sent_len, tgt_sent_len),
