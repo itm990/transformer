@@ -1,6 +1,8 @@
 import datetime
 import argparse
+import json
 from logging import getLogger, INFO, FileHandler, Formatter
+import os
 from tqdm import tqdm
 import nltk
 import random
@@ -128,11 +130,7 @@ def train(tgt_EOS, src_PAD, tgt_PAD, max_len, dictionary, pos_enc, args,
             print("BLEU:", bleu_score)
             if bleu_score > max_score:
                 max_score = bleu_score
-                model = {
-                    "model_options" : args,
-                    "model_states"  : transformer.state_dict()
-                }
-                torch.save(model, model_name)
+                torch.save(transformer.state_dict(), model_name)
                 print("saved.")
             
         train_logger.info("[epoch:%d] loss:%f BLEU:%f"
@@ -162,7 +160,7 @@ def main():
     parser.add_argument("--init", action="store_false")
     parser.add_argument("--label_smoothing", type=float, default=0.1)
     parser.add_argument("--max_norm", type=float, default=5.0)
-    parser.add_argument("--name", type=str)
+    parser.add_argument("--name", type=str, default="no_name")
     parser.add_argument("--parallel_size", type=int, default=8)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--sub_layer_num", type=int, default=6)
@@ -176,14 +174,17 @@ def main():
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", device)
+    
+    # save config file
+    save_dir = "./model/{}_{}".format(args.name, datetime_str) if args.name != "no_name" else "./model/no_name"
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    with open("{}/config.json".format(save_dir, args.name), mode="w") as f:
+        json.dump(vars(args), f, separators=(",", ":"), indent=4)
 
     logger = getLogger(__name__)
-    if args.name is None:
-        log_name = "./log/no_name.log"
-        model_name = "./model/no_name.pt"
-    else:
-        log_name = "./log/{}_{}.log".format(args.name, datetime_str)
-        model_name = "./model/{}_{}.pt".format(args.name, datetime_str)
+    log_name = "{}/train.log".format(save_dir)
+    model_name = "{}/best.pt".format(save_dir)
         
     fh = FileHandler(log_name)
     fmt = Formatter("[%(levelname)s] %(asctime)s (%(name)s) - %(message)s")

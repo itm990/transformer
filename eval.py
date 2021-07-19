@@ -1,4 +1,6 @@
 import argparse
+import json
+import os
 from tqdm import tqdm
 
 import torch
@@ -26,12 +28,14 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("device:", device)
     
-    model = torch.load(args.model_name)
-    options = model["model_options"]
-    print(options)
+    model_dir = os.path.dirname(args.model_name)
+    with open("{}/config.json".format(model_dir)) as f:
+        config = json.load(f)
+    config = argparse.Namespace(**config)
+    print("model:", args.model_name)
     
-    src_dict_data = torch.load(options.src_dict_path)
-    tgt_dict_data = torch.load(options.tgt_dict_path)
+    src_dict_data = torch.load(config.src_dict_path)
+    tgt_dict_data = torch.load(config.tgt_dict_path)
     src2idx = src_dict_data["dict"]["word2index"]
     idx2tgt = tgt_dict_data["dict"]["index2word"]
     PAD = src2idx["[PAD]"]
@@ -56,19 +60,18 @@ def main():
                              shuffle=False)
 
     src_max_len = max([len(element) for element in src_eval_idx_list])
-    pos_enc = positional_encoding(src_max_len+50, options.hidden_size)
+    pos_enc = positional_encoding(src_max_len+50, config.hidden_size)
     
     transformer = models.Transformer(
         PAD, PAD,
-        options.hidden_size, options.ffn_hidden_size,
+        config.hidden_size, config.ffn_hidden_size,
         src_dict_size, tgt_dict_size,
-        options.parallel_size, options.sub_layer_num,
-        options.dropout,
-        options.init
+        config.parallel_size, config.sub_layer_num,
+        config.dropout,
+        config.init
     ).to(device)
-        
-    states  = model["model_states"]
-    transformer.load_state_dict(states)
+    
+    transformer.load_state_dict(torch.load(args.model_name))
     
     sentence_list = translate(EOS, PAD, PAD,
                               src_max_len, idx2tgt, pos_enc,
