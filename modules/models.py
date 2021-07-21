@@ -46,9 +46,10 @@ class Encoder(nn.Module):
             [EncoderLayer(hidden_size, ffn_hidden_size, parallel_size, dropout)
              for _ in range(sub_layer_num)]
         )
+        
+        nn.init.constant_(self.embedding.weight[pad_index], 0)
         if init:
             nn.init.normal_(self.embedding.weight, mean=0, std=hidden_size ** -0.5)
-            nn.init.constant_(self.embedding.weight[pad_index], 0)
         
     def forward(self, input, pos_enc, self_attn_mask):
         
@@ -81,13 +82,13 @@ class Decoder(nn.Module):
             [DecoderLayer(hidden_size, ffn_hidden_size, parallel_size, dropout)
              for _ in range(sub_layer_num)]
         )
-        self.out = nn.Linear(hidden_size, dict_size)
+        self.out = nn.Linear(hidden_size, dict_size, bias=False)
         self.logsoftmax = nn.LogSoftmax(dim=2)
+        
+        nn.init.constant_(self.embedding.weight[pad_index], 0)
         if init:
             nn.init.normal_(self.embedding.weight, mean=0, std=hidden_size ** -0.5)
-            nn.init.constant_(self.embedding.weight[pad_index], 0)
             nn.init.xavier_uniform_(self.out.weight)
-            nn.init.constant_(self.out.bias, 0)
               
     def forward(self,
                 input, encoder_output, pos_enc, self_attn_mask, srctgt_mask):

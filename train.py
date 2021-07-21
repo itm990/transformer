@@ -128,7 +128,7 @@ def main():
     parser.add_argument("--epoch_size", type=int, default=20)
     parser.add_argument("--ffn_hidden_size", type=int, default=2048)
     parser.add_argument("--hidden_size", type=int, default=512)
-    parser.add_argument("--init", action="store_false")
+    parser.add_argument("--init", action="store_true")
     parser.add_argument("--label_smoothing", type=float, default=0.1)
     parser.add_argument("--max_norm", type=float, default=5.0)
     parser.add_argument("--name", type=str, default="no_name")
