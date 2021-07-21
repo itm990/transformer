@@ -10,6 +10,7 @@ import random
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from torch.cuda.amp import autocast, GradScaler
 from torch.utils.data import DataLoader
 
 import modules.dataset as dataset
@@ -22,7 +23,7 @@ from modules.preprocess import make_dict, load_sentences, convert_sent_to_word, 
 
 def train(PAD, BOS, EOS, max_len, dictionary, pos_enc, args,
           train_loader, valid_loader, valid_word_data, transformer,
-          criterion, optimizer, device, model_name):
+          criterion, optimizer, scaler, device, model_name):
 
     train_logger = getLogger(__name__).getChild("train")
 
@@ -62,18 +63,22 @@ def train(PAD, BOS, EOS, max_len, dictionary, pos_enc, args,
             dec_pos_enc = pos_enc[:tgt_sent_len, :].unsqueeze(0)
             dec_pos_enc = dec_pos_enc.expand(batch_size, -1, -1).to(device)
             
-            output = transformer(enc_in, dec_in, enc_pos_enc, dec_pos_enc,
-                                 enc_self_attn_mask, dec_self_attn_mask,
-                                 dec_srctgt_mask)
-            
-            output = output.view(-1, output.size(-1))
-            dec_out = dec_out.view(-1)
-            
-            loss = criterion(output, dec_out)
-            
-            total_loss += loss
-            loss.backward()
+            with autocast(args.use_amp):
+                
+                output = transformer(enc_in, dec_in, enc_pos_enc, dec_pos_enc,
+                                     enc_self_attn_mask, dec_self_attn_mask,
+                                     dec_srctgt_mask)
+                
+                output = output.view(-1, output.size(-1))
+                dec_out = dec_out.view(-1)
+                
+                loss = criterion(output, dec_out)
 
+            total_loss += loss.item()
+
+            scaler.scale(loss).backward()
+            scaler.unscale_(optimizer)
+            
             nn.utils.clip_grad_norm_(transformer.parameters(),
                                      max_norm=args.max_norm)
 
@@ -81,7 +86,8 @@ def train(PAD, BOS, EOS, max_len, dictionary, pos_enc, args,
                                                   step_num*warmup_steps**(-1.5))
             for op in optimizer.param_groups:
                 op["lr"] = lrate
-            optimizer.step()
+            scaler.step(optimizer)
+            scaler.update()
             step_num += 1
 
             pbar.set_description("[epoch:%d] loss:%f"
@@ -129,6 +135,7 @@ def main():
     parser.add_argument("--parallel_size", type=int, default=8)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--sub_layer_num", type=int, default=6)
+    parser.add_argument("--use_amp", action="store_true")
     parser.add_argument("--valid_batch_size", type=int, default=50)
     parser.add_argument("--weight_decay", type=float, default=1e-6)
     
@@ -223,6 +230,8 @@ def main():
                            betas=(0.9, 0.98),
                            eps=1e-9,
                            weight_decay=args.weight_decay)
+    
+    scaler = GradScaler()
 
     criterion = MyNLLLoss(smooth_weight=args.label_smoothing,
                           ignore_index=PAD)
@@ -230,7 +239,7 @@ def main():
 
     train(PAD, BOS, EOS, args.max_length, idx2tgt, pos_enc, args,
           train_loader, valid_loader, valid_word_data, transformer,
-          criterion, optimizer, device, model_name)
+          criterion, optimizer, scaler, device, model_name)
 
 
 if __name__ == "__main__":
