@@ -10,7 +10,7 @@ import modules.dataset as dataset
 import modules.models as models
 from modules.pos_enc import positional_encoding
 from modules.translate import translate
-from train import load_sentences, convert_sent_to_word, convert_word_to_idx
+from modules.preprocess import load_sentences, convert_sent_to_word, convert_word_to_idx
 
 
 def main():

@@ -17,35 +17,7 @@ import modules.models as models
 from modules.pos_enc import positional_encoding
 from modules.translate import translate
 from modules.MyNLLLoss import MyNLLLoss
-
-
-def load_sentences(data_path):
-    sent_list = []
-    with open(data_path) as f:
-        for sent in f:
-            sent_list.append(sent.strip())
-    return sent_list
-
-
-def convert_sent_to_word(sent_list):
-    return [ sent.strip().split(" ") for sent in sent_list ]
-
-def trim_list(src_lst, tgt_lst, sent_num=5000, max_len=100):
-    trimmed_src_lst, trimmed_tgt_lst = [], []
-    item_cnt = 0
-    for src, tgt in zip(src_lst, tgt_lst):
-        if item_cnt >= sent_num:
-            break
-        if len(src) > max_len or len(tgt) > max_len:
-            continue
-        trimmed_src_lst.append(src)
-        trimmed_tgt_lst.append(tgt)
-        item_cnt += 1
-    return trimmed_src_lst, trimmed_tgt_lst
-
-
-def convert_word_to_idx(word_list, word2index):
-    return [ [ word2index[word] if word in word2index else word2index["[UNK]"] for word in words ] for words in word_list ]
+from modules.preprocess import make_dict, load_sentences, convert_sent_to_word, trim_list, convert_word_to_idx
 
 
 def train(PAD, BOS, EOS, max_len, dictionary, pos_enc, args,
