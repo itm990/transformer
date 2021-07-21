@@ -10,14 +10,14 @@ import modules.dataset as dataset
 import modules.models as models
 from modules.pos_enc import positional_encoding
 from modules.translate import translate
-from modules.preprocess import load_sentences, convert_sent_to_word, convert_word_to_idx
+from modules.preprocess import make_dict, load_sentences, convert_sent_to_word, convert_word_to_idx
 
 
 def main():
 
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--src_eval_path", type=str, default="../corpus/ASPEC-JE/corpus.tok/test.en")
+    parser.add_argument("--src_eval_path", type=str, default=None)
     
     parser.add_argument("--batch_size", type=int, default=50)
     parser.add_argument("model_name", type=str)
@@ -34,10 +34,8 @@ def main():
     config = argparse.Namespace(**config)
     print("model:", args.model_name)
     
-    src_dict_data = torch.load(config.src_dict_path)
-    tgt_dict_data = torch.load(config.tgt_dict_path)
-    src2idx = src_dict_data["dict"]["word2index"]
-    idx2tgt = tgt_dict_data["dict"]["index2word"]
+    src2idx, idx2src = make_dict(config.src_vocab_path)
+    tgt2idx, idx2tgt = make_dict(config.tgt_vocab_path)
     PAD = src2idx["[PAD]"]
     BOS = src2idx["[BOS]"]
     EOS = src2idx["[EOS]"]

@@ -108,12 +108,12 @@ def main():
     
     parser = argparse.ArgumentParser()
     
-    parser.add_argument("--src_dict_path", type=str, default="../corpus/ASPEC-JE/dict/aspec_100k.en-ja.en.dict")
-    parser.add_argument("--tgt_dict_path", type=str, default="../corpus/ASPEC-JE/dict/aspec_100k.en-ja.ja.dict")
-    parser.add_argument("--src_train_path", type=str, default="../corpus/ASPEC-JE/corpus.tok/train-1.en")
-    parser.add_argument("--tgt_train_path", type=str, default="../corpus/ASPEC-JE/corpus.tok/train-1.ja")
-    parser.add_argument("--src_valid_path", type=str, default="../corpus/ASPEC-JE/corpus.tok/dev.en")
-    parser.add_argument("--tgt_valid_path", type=str, default="../corpus/ASPEC-JE/corpus.tok/dev.ja")
+    parser.add_argument("--src_vocab_path", type=str, default=None)
+    parser.add_argument("--tgt_vocab_path", type=str, default=None)
+    parser.add_argument("--src_train_path", type=str, default=None)
+    parser.add_argument("--tgt_train_path", type=str, default=None)
+    parser.add_argument("--src_valid_path", type=str, default=None)
+    parser.add_argument("--tgt_valid_path", type=str, default=None)
     parser.add_argument("--sentence_num", type=int, default=100000)
     parser.add_argument("--max_length", type=int, default=50)
     
@@ -160,11 +160,8 @@ def main():
     
     logger.info(args)
     print(args)
-    src_dict_data = torch.load(args.src_dict_path)
-    tgt_dict_data = torch.load(args.tgt_dict_path)
-    src2idx = src_dict_data["dict"]["word2index"]
-    tgt2idx = tgt_dict_data["dict"]["word2index"]
-    idx2tgt = tgt_dict_data["dict"]["index2word"]
+    src2idx, idx2src = make_dict(args.src_vocab_path)
+    tgt2idx, idx2tgt = make_dict(args.tgt_vocab_path)
     PAD = src2idx["[PAD]"]
     BOS = src2idx["[BOS]"]
     EOS = src2idx["[EOS]"]
