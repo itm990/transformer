@@ -8,6 +8,8 @@ Transformerモデル
 
 - Python 3.7.3
 - PyTorch 1.6.0
+- tqdm 4.56.0
+- nltk 3.4.3
 
 ## 使用方法
 
