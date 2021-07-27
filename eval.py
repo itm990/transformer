@@ -44,7 +44,7 @@ def main():
     
     # load eval data
     src_eval_sent_list = load_sentences(args.src_eval_path)
-    src_eval_sent_list = src_eval_sent_list[:100]
+
     # convert sent to word
     src_eval_word_list = convert_sent_to_word(src_eval_sent_list)
     
