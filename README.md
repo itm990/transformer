@@ -2,7 +2,8 @@
 
 ## 説明
 
-Transformerモデル
+Transformerでの機械翻訳の実装です．
+原言語文から目的言語文への翻訳の学習を行います．
 
 ## 要件
 
@@ -14,6 +15,7 @@ Transformerモデル
 ## 使用方法
 
 - 学習
+
 ```
 $ train.py \
     --src_vocab_path [source vocabulary] \
@@ -42,6 +44,7 @@ $ train.py \
 ```
 
 - 翻訳
+
 ```
 $ eval.py \
     [model name]/best.pt \
