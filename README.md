@@ -17,20 +17,20 @@ Transformerでの機械翻訳の実装です．
 - 学習
 
 ```
-$ train.py \
+$ python train.py \
     --src_vocab_path [source vocabulary] \
     --tgt_vocab_path [target vocabulary] \
     --src_train_path [source train data] \
     --tgt_train_path [target train data] \
     --src_valid_path [source validation data] \
     --tgt_valid_path [target validation data] \
-    --sentence_num 20000 \
+    --sentence_num 100000 \
     --max_length 50 \
     --batch_size 96 \
     --dropout 0.1 \
     --epoch_size 20 \
     --ffn_hidden_size 2048 \
-    --hidden_size 256 \
+    --hidden_size 512 \
     --init \
     --label_smoothing 0.1 \
     --max_norm 5.0 \
@@ -46,7 +46,7 @@ $ train.py \
 - 推論
 
 ```
-$ eval.py \
+$ python eval.py \
     [model name]/best.pt \
     --src_eval_path [source evaluation data] \
     --batch_size 50 \
